@@ -69,3 +69,22 @@ npm run tw:build
 
 - `FLASK_SECRET_KEY` ใช้สำหรับ Flask session/flash message
 - `FLASK_DEBUG` เปิด/ปิด debug mode (`true` เฉพาะตอนพัฒนา)
+
+## Project Structure
+
+```text
+app.py                 # Flask routes + request parsing + page context
+services/
+	journal.py           # อ่าน/เขียนไฟล์บันทึก journal.csv
+	weather.py           # ดึงข้อมูลอากาศจาก Open-Meteo + cache
+	stats.py             # ฟังก์ชันคำนวณสถิติและ align ข้อมูลตามวัน
+templates/
+	index.html           # หน้า Dashboard
+	log.html             # หน้าเพิ่มบันทึกประจำวัน
+static/
+	js/dashboard.js      # สร้างกราฟด้วย Chart.js + client-side interactions
+	css/input.css        # Tailwind v4 + daisyUI theme config
+	css/output.css       # CSS ที่ build แล้ว
+data/
+	journal.csv          # ข้อมูล mood/productivity รายวัน
+```
