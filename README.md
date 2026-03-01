@@ -23,3 +23,17 @@ python3 -m venv venv
 source venv/bin/activate
 pip install -r requirements.txt
 ```
+
+2. ติดตั้ง frontend dependencies
+
+```bash
+npm install
+```
+
+3. ตั้งค่า environment
+
+```bash
+cp .env.example .env
+```
+
+จากนั้นแก้ค่า `FLASK_SECRET_KEY` ในไฟล์ `.env` ก่อนใช้งานจริง
