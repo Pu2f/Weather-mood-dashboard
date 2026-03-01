@@ -58,3 +58,9 @@ python3 app.py
 ```
 
 เข้าใช้งานที่ `http://127.0.0.1:5000`
+
+## Build CSS (one-time)
+
+```bash
+npm run tw:build
+```
