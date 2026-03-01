@@ -48,3 +48,13 @@ Terminal A (watch CSS)
 npm run tw:watch
 
 ```
+
+Terminal B (run Flask)
+
+```bash
+source venv/bin/activate
+set -a && source .env && set +a
+python3 app.py
+```
+
+เข้าใช้งานที่ `http://127.0.0.1:5000`
