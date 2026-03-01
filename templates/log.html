@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="th" data-theme="bumblebee">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Log วันนี้</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/output.css') }}" />
+  </head>
+  <body class="bg-base-200">
+    <div class="navbar bg-base-100 shadow">
+      <div class="flex-1">
+        <a class="btn btn-ghost text-xl" href="{{ url_for('index') }}">{{ title }}</a>
+      </div>
+    </div>
+
+    <main class="max-w-xl mx-auto p-4 space-y-4">
+      {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+          {% for category, msg in messages %}
+            <div class="alert {% if category=='error' %}alert-error{% else %}alert-success{% endif %}">
+              <span>{{ msg }}</span>
+            </div>
+          {% endfor %}
+        {% endif %}
+      {% endwith %}
+
+      <div class="card bg-base-100 shadow p-4">
+        <h1 class="text-lg font-semibold mb-4">เพิ่มบันทึกวันนี้</h1>
+
+        <form method="post" action="{{ url_for('log_post') }}" class="space-y-4">
+          <div class="space-y-2">
+            <label class="label" for="date"><span class="label-text">วันที่</span></label>
+            <input id="date" class="input input-bordered w-full" type="date" name="date" value="{{ today }}" required />
+          </div>
+
+          <div class="space-y-2">
+            <div class="flex items-center justify-between">
+              <label class="label" for="mood"><span class="label-text">Mood (1–5)</span></label>
+              <span class="text-sm opacity-70">ค่า: <span id="moodVal">3</span></span>
+            </div>
+            <input
+              id="mood"
+              class="range w-full"
+              type="range"
+              min="1"
+              max="5"
+              value="3"
+              name="mood"
+              oninput="document.getElementById('moodVal').textContent=this.value"
+            />
+          </div>
+
+          <div class="space-y-2">
+            <div class="flex items-center justify-between">
+              <label class="label" for="productivity"><span class="label-text">Productivity (1–5)</span></label>
+              <span class="text-sm opacity-70">ค่า: <span id="prodVal">3</span></span>
+            </div>
+            <input
+              id="productivity"
+              class="range range-success w-full"
+              type="range"
+              min="1"
+              max="5"
+              value="3"
+              name="productivity"
+              oninput="document.getElementById('prodVal').textContent=this.value"
+            />
+          </div>
+
+          <div class="flex gap-2 pt-2">
+            <button class="btn btn-primary" type="submit">บันทึก</button>
+            <a class="btn" href="{{ url_for('index') }}">กลับ Dashboard</a>
+          </div>
+        </form>
+
+        <div class="divider"></div>
+        <p class="text-sm opacity-70">
+          หมายเหตุ: ถ้าบันทึก “วันที่เดิม” ระบบจะอัปเดตทับ แทนการเพิ่มแถวใหม่
+        </p>
+      </div>
+    </main>
+  </body>
+</html>
