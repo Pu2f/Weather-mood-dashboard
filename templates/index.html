@@ -1,0 +1,166 @@
+<!doctype html>
+<html lang="th" data-theme="bumblebee">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{{ title }}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/output.css') }}" />
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
+  </head>
+  <body class="bg-base-200">
+    <div class="navbar bg-base-100 shadow">
+        <div class="flex-none gap-2 pr-4">
+            <a class="btn btn-sm btn-outline" href="{{ url_for('log_get') }}">+ เพิ่มบันทึกวันนี้</a>
+        </div>
+      <div class="flex-1">
+        <a class="btn btn-ghost text-xl">{{ title }}</a>
+      </div>
+      <div class="flex-none text-sm opacity-70 pr-4">
+        Hat Yai ({{ meta.lat }}, {{ meta.lon }})
+      </div>
+    </div>
+
+    <main class="max-w-6xl mx-auto p-4 space-y-4">
+      <!-- Filters -->
+      <form class="card bg-base-100 shadow p-4" method="get">
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-3 items-end">
+          <label class="form-control">
+            <div class="label"><span class="label-text">เริ่มวันที่</span></div>
+            <input class="input input-bordered" type="date" name="start" value="{{ filters.start }}" />
+          </label>
+          <label class="form-control">
+            <div class="label"><span class="label-text">ถึงวันที่</span></div>
+            <input class="input input-bordered" type="date" name="end" value="{{ filters.end }}" />
+          </label>
+
+          <label class="form-control">
+            <div class="label"><span class="label-text">Scatter X</span></div>
+            <select class="select select-bordered" name="xvar">
+              <option value="temp_mean" {% if filters.xvar=="temp_mean" %}selected{% endif %}>อุณหภูมิเฉลี่ย (°C)</option>
+              <option value="temp_max" {% if filters.xvar=="temp_max" %}selected{% endif %}>อุณหภูมิสูงสุด (°C)</option>
+              <option value="rain_mm" {% if filters.xvar=="rain_mm" %}selected{% endif %}>ฝนรวม (mm)</option>
+            </select>
+          </label>
+
+          <label class="form-control">
+            <div class="label"><span class="label-text">เกณฑ์ฝนตก (mm)</span></div>
+            <input class="input input-bordered" type="number" min="0" max="200" step="0.5" name="rain_threshold" value="{{ filters.rain_threshold }}" />
+          </label>
+        </div>
+
+        <div class="mt-4 flex gap-2">
+          <button class="btn btn-primary" type="submit">อัปเดต</button>
+          <a class="btn" href="/">รีเซ็ต</a>
+        </div>
+      </form>
+
+      <!-- Summary -->
+      <section class="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div class="stats shadow bg-base-100">
+          <div class="stat">
+            <div class="stat-title">Correlation (X vs Productivity)</div>
+            <div class="stat-value text-2xl">
+              {% if stats.corr is none %}N/A{% else %}{{ "%.2f"|format(stats.corr) }}{% endif %}
+            </div>
+            <div class="stat-desc">ยิ่งใกล้ -1/+1 ยิ่งสัมพันธ์ (แต่ยังไม่ใช่เหตุผล)</div>
+          </div>
+        </div>
+
+        <div class="stats shadow bg-base-100">
+          <div class="stat">
+            <div class="stat-title">Productivity เฉลี่ย (วันฝนตก)</div>
+            <div class="stat-value text-2xl">
+              {% if stats.rain_groups.rainy_avg is none %}N/A{% else %}{{ "%.2f"|format(stats.rain_groups.rainy_avg) }}{% endif %}
+            </div>
+            <div class="stat-desc">n={{ stats.rain_groups.rainy_n }} (นับเฉพาะวันที่มี productivity)</div>
+          </div>
+        </div>
+
+        <div class="stats shadow bg-base-100">
+          <div class="stat">
+            <div class="stat-title">Productivity เฉลี่ย (วันไม่ตก)</div>
+            <div class="stat-value text-2xl">
+              {% if stats.rain_groups.dry_avg is none %}N/A{% else %}{{ "%.2f"|format(stats.rain_groups.dry_avg) }}{% endif %}
+            </div>
+            <div class="stat-desc">n={{ stats.rain_groups.dry_n }} (นับเฉพาะวันที่มี productivity)</div>
+          </div>
+        </div>
+      </section>
+
+      <p class="text-sm opacity-70 px-1">หมายเหตุ: สถิติวันฝนตก/ไม่ตกจะคำนวณจากวันที่มีทั้ง rain_mm และ productivity เท่านั้น</p>
+
+      <!-- Charts -->
+      <section class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        <div class="card bg-base-100 shadow p-4">
+          <h2 class="font-semibold mb-2">เวลา: อุณหภูมิ vs Productivity</h2>
+          <canvas id="lineChart" height="140"></canvas>
+        </div>
+        <div class="card bg-base-100 shadow p-4">
+          <h2 class="font-semibold mb-2">Scatter: X vs Productivity (+ เส้นถดถอย)</h2>
+          <canvas id="scatterChart" height="140"></canvas>
+        </div>
+        <div class="card bg-base-100 shadow p-4 lg:col-span-2">
+          <h2 class="font-semibold mb-2">Bar: Productivity เฉลี่ย วันฝนตก vs ไม่ตก</h2>
+          <canvas id="barChart" height="110"></canvas>
+        </div>
+      </section>
+
+      <!-- Data table -->
+      <div class="card bg-base-100 shadow p-4">
+        <h2 class="font-semibold mb-2">ข้อมูลรายวัน (journal ต้องมีถึงจะเห็น mood/productivity)</h2>
+        <p class="text-sm opacity-70 mb-2">ไฮไลต์แถว: <span class="badge badge-success badge-outline">rainy</span> <span class="badge badge-info badge-outline">dry</span> <span class="badge badge-ghost">not used</span></p>
+        <div class="overflow-x-auto">
+          <table class="table table-zebra">
+            <thead>
+              <tr>
+                <th>date</th>
+                <th>used_in_rain_stats</th>
+                <th>temp_mean</th>
+                <th>temp_max</th>
+                <th>rain_mm</th>
+                <th>mood</th>
+                <th>productivity</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for i in range(series.labels|length) %}
+              <tr class="{% if series.productivity[i] is none or series.rain_mm[i] is none %}bg-base-200 opacity-70{% elif series.rain_mm[i] >= filters.rain_threshold %}bg-success/15{% else %}bg-info/10{% endif %}">
+                <td>{{ series.labels[i] }}</td>
+                <td>
+                  {% if series.productivity[i] is none or series.rain_mm[i] is none %}
+                    <span class="badge badge-ghost">-</span>
+                  {% elif series.rain_mm[i] >= filters.rain_threshold %}
+                    <span class="badge badge-success badge-outline">rainy</span>
+                  {% else %}
+                    <span class="badge badge-info badge-outline">dry</span>
+                  {% endif %}
+                </td>
+                <td>{{ "-" if series.temp_mean[i] is none else series.temp_mean[i] }}</td>
+                <td>{{ "-" if series.temp_max[i] is none else series.temp_max[i] }}</td>
+                <td>{{ "-" if series.rain_mm[i] is none else series.rain_mm[i] }}</td>
+                <td>{{ "-" if series.mood[i] is none else series.mood[i] }}</td>
+                <td>{{ "-" if series.productivity[i] is none else series.productivity[i] }}</td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </main>
+
+    <script>
+      window.DASHBOARD_DATA = {{ {
+        "labels": series.labels,
+        "temp_mean": series.temp_mean,
+        "temp_max": series.temp_max,
+        "rain_mm": series.rain_mm,
+        "mood": series.mood,
+        "productivity": series.productivity,
+        "xvar": filters.xvar,
+        "rain_threshold": filters.rain_threshold,
+        "regression": stats.regression
+      } | tojson }};
+    </script>
+    <script src="{{ url_for('static', filename='js/dashboard.js') }}"></script>
+  </body>
+</html>
