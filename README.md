@@ -37,3 +37,14 @@ cp .env.example .env
 ```
 
 จากนั้นแก้ค่า `FLASK_SECRET_KEY` ในไฟล์ `.env` ก่อนใช้งานจริง
+
+## Run (Development)
+
+เปิด 2 terminal:
+
+Terminal A (watch CSS)
+
+```bash
+npm run tw:watch
+
+```
