@@ -64,3 +64,8 @@ python3 app.py
 ```bash
 npm run tw:build
 ```
+
+## Environment Variables
+
+- `FLASK_SECRET_KEY` ใช้สำหรับ Flask session/flash message
+- `FLASK_DEBUG` เปิด/ปิด debug mode (`true` เฉพาะตอนพัฒนา)
